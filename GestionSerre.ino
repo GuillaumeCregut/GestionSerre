@@ -1,9 +1,23 @@
+/* * * * * * * * * * * * * * * * * * * * * * * * * * */
+/*               NOM_DU_PROGRAMME                */
+/*   G. Cregut                                       */
+/*   DATE                                      */
+/* (c)2016 Editiel98                                 */
+/* * * * * * * * * * * * * * * * * * * * * * * * * * */
+//déclarations includes
+
+//Déclarations variables globales
+
+//Déclarations des constantes globales
+
+//déclarations fonctions
+
 void setup() {
-  // put your setup code here, to run once:
+  //Initialisation système
 
 }
 
 void loop() {
-  // put your main code here, to run repeatedly:
+  //Boucle principale.
 
 }
