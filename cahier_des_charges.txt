@@ -1,0 +1,56 @@
+Besoins fonctionnels :
+-Affichage par appui d'un bouton des différentes valeurs de mesure.
+-Menu permettant de régler les valeurs min, max pour la t°, hygro, etc... pour déclenchement des actionneurs->Valeurs stockées en hard.
+-Si option menu permettant de sauvegarder l'adresse IP et le port com avec Domoticos Carte cliente domoticos.
+Option mémorisation des relevés min et max avec date, etc...
+
+Actionneurs :
+-Electrovanne d'alimentation en eau
+-Servo moteur d'ouverture de la toiture
+-Ventilateur
+-Lumière
+
+Capteurs :
+-Température intérieure
+-Luminosité
+-Humidité
+-Température extérieure
+
+IHM
+1 LCD 2 ou 4 lignes
+1 joystick 5 boutons
+Option :
+-Réseau IP pour communication avec Domoticos
+-Réseau RS485 idem
+
+Ressources nécessaires :
+4 Broches pour les capteurs
+4 Broches pour les actionneurs
+5 Broches pour le joystick
+2 broches pour le port série
+1 broche option pour le port ethernet (en plus de celles utilisée pour le SPI)
+7 Broches pour le LCD (en utilisant le backlight)
+Soit un total de 23 broches en l'état sans compter les ports utilisés pour le SPI IP.
+Cela conduit soit au choix d'un arduino mega soit un extenseur de port, soit, en plus aux multiplexage pour l'écran LCD
+
+Multiplexage LCD :
+Utilisation d'un 74HC595, libérant 3 broches.
+LCD sur I2C : On utilise alors 2 broches pour le I2C, tout est géré depuis le bus.
+
+Le choix retenu se porte sur l'écran I2C, libérant les broches nécessaires et permettant une évolution vers un module indépendant intégrant un RTC et une EEPROM voir une extension de port I2C.
+
+Fonctionnement envisagé
+Appui sur bouton du haut et bas hors menu : 
+Fait défiler les valeurs des mesures actuelles
+Si option EEPROM : affiche aussi les min/max enregistrées.
+
+Dans menu :
+Valeurs stockées en EEPROM
+Réglage du 0 humidité
+Réglage T°C max pour ouverture trappe 
+Réglage T°C min pour alimenter le chauffage
+Si option, paramètres IP et protocole domoticos
+
+En cas d'appui sur bouton, le rétro éclairage s'allume
+Extinction après 5 sec d'inactivité.
+
