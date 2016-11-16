@@ -116,7 +116,7 @@ void MesureTemp()  //Mesure la températures
    MesureTemp.TypeMesure=TempInt;
 //Lecture de la mesure
    MesureTemp.ValMesure=0;  ///////////////////////////////A modifier
-//Vérifie sur mesureTemp<min ou >max
+//Vérifie sur mesureTemp.ValMesure<min ou >max
 //Si mesure correspond, on stocke min ou max, et on memorise
   
 //Enregistrement de la mesure dans la PROM
@@ -124,7 +124,7 @@ void MesureTemp()  //Mesure la températures
 //Mesure temp Ext
    MesureTemp.TypeMesure=TempExt;
       MesureTemp.ValMesure=0;  ///////////////////////////////A modifier
-//Vérifie sur mesureTemp<min ou >max
+//Vérifie sur mesureTemp.ValMesure<min ou >max
 //Si mesure correspond, on stocke min ou max, et on memorise
   
 //Enregistrement de la mesure dans la PROM
