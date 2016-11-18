@@ -60,3 +60,9 @@ Le système effectue une mesure tout les x temps (en minutes) et si les seuils so
 -20 % au dessus de la valeur, alors on arrete la fonction
 
 Pour la gestion de la température, on agit comme cela :
+
+Mémorisation des données de mesures :
+Chaque mesure occupe 8 octets dans la mémoire.
+en prenant un 24LC512, on obtient donc 80000 mesures.
+Si on effectue 1 mesure par heure, cela fait 8000 heures d'autonomie mémoire, soit près d'un an d'autonomie. On a de quoi voir venir....
+en en faisant toutes les minutes, alors cela nous fait 5 jours d'autonomie

@@ -19,7 +19,7 @@ typedef struct {
 
 typedef struct
 {
-  int TypeMesure;
+  uint8_t TypeMesure;
   uint8_t HeureEEPROM;
   uint8_t MinuteEEPROM;
   uint8_t MoisEEPROM;

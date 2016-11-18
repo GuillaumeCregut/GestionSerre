@@ -117,18 +117,61 @@ void EcrireRTC(DateRTC *date)
   Wire.write(0);
   Wire.endTransmission(); //Fin d'écriture de la demande RTC
 }
+                     /********Fonction Conversion 2 Bytes en Int ********/ 
+int ConvertByteToInt(byte ValMsb, byte ValLsb)
+{
+  return (ValMsb<<8)|ValLsb;
+}
 
+                     /********Fonction Ecriture d'un octet en mémoire ********/ 
+void I2CEEPROMWrite(int Adresse,byte Valeur)
+{
+  Wire.beginTransmission(AdresseEEPROM);  //adresse de la prom 
+  Wire.write((Adresse>>8)&0xFF);
+  Wire.write((Adresse>>0)&0xFF);
+  Wire.write(Valeur);
+  Wire.endTransmission();
+  delay(5);                    
+}
                      /********Fonction Gestion de l'EEPROM I2C********/ 
 //Fonction écriture dans l'EEPROM I2C
 int EcrireEEPROM(int debut,MesureEEPROM *MesureAEnregistrer)
 {
-//Verifions si on déborde pas.... On est à l'adresse d'écriture
+//Variables
+  byte MSBVal,LSBVal;  //On écrit octet par octet.
+  byte MesuresAEcrire[8];
+  MSBVal=highByte(MesureAEnregistrer->ValMesure);
+  LSBVal=lowByte(MesureAEnregistrer->ValMesure);
+ /* MSBVal=(MesureAEnregistrer->ValMesure &0xFF00)>>8;
+  LSBVal=MesureAEnregistrer->ValMesure&0x00FF;*/
+  /*      Schéma adressage
+   *  -Adresse 0, soit début : Minutes
+   *  -Adresse+1 : Heures
+   *  -Adresse+2 : Jour
+   *  -Adresse+3 : Mois
+   *  -Adresse+4 : Annee
+   *  -Adresse+5 : Type Mesure
+   *  -Adresse+6 : MSB
+   *  -Adresse+7 : LSB
+   */
+   //On affecte les mesures à un tableau
+   MesuresAEcrire[0]=MesureAEnregistrer->HeureEEPROM;
+   MesuresAEcrire[1]=MesureAEnregistrer->MinuteEEPROM;
+   MesuresAEcrire[2]=MesureAEnregistrer->JourEEPROM;
+   MesuresAEcrire[3]=MesureAEnregistrer->MoisEEPROM;
+   MesuresAEcrire[4]=MesureAEnregistrer->AnneeEEPROM;
+   MesuresAEcrire[5]=MesureAEnregistrer->TypeMesure;
+   MesuresAEcrire[6]=MSBVal;
+   MesuresAEcrire[7]=LSBVal;
+  //Verifions si on déborde pas.... On est à l'adresse d'écriture
   //Si adresse+taille enregistrement >taille EEPROM, adresse=0
-//Se positionne au bon endroit dans l'eeprom
 
-//Ecrit dans l'eeprom
-
-//augmente le pointeur de la taille d'une structure
+  //Ecrit dans l'eeprom
+   for (int i=0;i<8;i++)
+   {
+      I2CEEPROMWrite(debut+i,MesuresAEcrire[i]);
+   }
+  //augmente le pointeur de la taille d'une structure
   debut=debut+sizeof(MesureEEPROM);  
   return debut;
 }
@@ -138,7 +181,7 @@ int EcrireEEPROM(int debut,MesureEEPROM *MesureAEnregistrer)
 /*                         Fonctions mesures et actions                    */
 /*                                                                         */
 /* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * */  
-int MesureTemp(int TypeTemp)  //Mesure la températures
+int MesureTemp(byte TypeTemp)  //Mesure la températures
 {
   int AdresseMin,  AdresseMax, ValeurLue;
   //Mesure la température intérieure, extérieure. Compare avec le min et le max, et si valeurdépassée, stocke en EEPROM
