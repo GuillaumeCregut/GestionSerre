@@ -8,6 +8,7 @@
 
 //déclarations includes
 #include <Wire.h>  //pour l'EEPROM, la RTC et l'écran.
+#include <EEPROM.h> // Pour le stockage des paramètres dans la PROM de l'arduino
 #include "structDate.h" //stucture de la date
 //Déclarations variables globales
 int TempExt, TempInt, TempIntMin, TempIntMax,TempExtMin, TempExtMax ;  //Retour des mesures de températures
@@ -27,7 +28,7 @@ MesureEEPROM MesureFaite;  //Génère une structure type mesure
 #define PinTempInt A0  //Broche connectée au capteur intérieur.
 #define PinTempExt A1
 #define PinHygro A2
-#define Luminosite A3
+#define PinLuminosite A3
 
 //Entrées numériques
 #define BoutonMenu 1
@@ -90,26 +91,62 @@ void EcrireRTC(DateRTC *date)
   Wire.write(0);
   Wire.endTransmission(); //Fin d'écriture de la demande RTC
 }
-int EcrireEEPROM(int debut, MesureEEPROM *MesureAEnregistrer)
+int EcrireEEPROM(int debut,MesureEEPROM *MesureAEnregistrer)
 {
+//Verifions si on déborde pas.... On est à l'adresse d'écriture
+  //Si adresse+taille enregistrement >taille EEPROM, adresse=0
+//Se positionne au bon endroit dans l'eeprom
 
- 
+//Ecrit dans l'eeprom
+
+//augmente le pointeur de la taille d'une structure
+  debut=debut+sizeof(MesureEEPROM);  
+  return debut;
 }
 int MesureTemp(int TypeTemp)  //Mesure la températures
 {
-/* * * * * * * * * * * * * * * * * *  
- *  Voir pour améliorer la boucle  *
- * * * * * * * * * * * * * * * * * */
+  int AdresseMin,  AdresseMax, ValeurLue;
   //Mesure la température intérieure, extérieure. Compare avec le min et le max, et si valeurdépassée, stocke en EEPROM
   //Stocke les valeurs dans les variables globales, pour les fonctions de traitement
    MesureFaite.TypeMesure=TypeTemp;
 //Lecture de la mesure
-   MesureFaite.ValMesure=0;  ///////////////////////////////A modifier
+  switch(TypeTemp)  //En fonction du type de capteur (interieur ou exterieur)
+  {
+    case TempExtM :
+      MesureFaite.ValMesure=analogRead(PinTempExt);
+      //Adresse Min et Max dans l'EEPROM arduino
+      AdresseMin=sizeof(int)*2;  //L'adresse Temp Ext Min est la 3ème position après 2 autres int
+      AdresseMax=sizeof(int)*3;  //L'adresse Temp Ext Max est la 4ème position après 3 autres int
+      break;
+    case TempIntM : 
+      MesureFaite.ValMesure=analogRead(PinTempInt);
+      //Adresse Min et Max dans l'EEPROM arduino
+      AdresseMin=0;  //La veleur de temp Int min est à l'adresse 0
+      AdresseMax=sizeof(int); //La valeur temp Int Max est la suivante, soit 0+taille de int
+      break; 
+  }  
 //Vérifie sur mesureTemp.ValMesure<min ou >max
+   EEPROM.get(AdresseMin,ValeurLue);  //On récupère la temp Min
+   if (MesureFaite.ValMesure<ValeurLue)
+   {
+      //On stocke la valeur et on passe
+      EEPROM.put(AdresseMin,TempIntMin); 
+   }
+   else
+   {
+       EEPROM.get(AdresseMax,ValeurLue);  //On récupère la temp Min
+       if (MesureFaite.ValMesure>ValeurLue)
+       {
+          //On stocke la valeur max
+           EEPROM.put(AdresseMax,MesureFaite.ValMesure);
+       }
+   }
+  //On va lire dans l'EEPROM de l'arduino ces valeurs
+
 //Si mesure correspond, on stocke min ou max, et on memorise
   
 //Enregistrement de la mesure dans la PROM
-  EcrireEEPROM(PointeurEEPROM, &MesureFaite);
+  PointeurEEPROM=EcrireEEPROM(PointeurEEPROM, &MesureFaite);
 }
 void GestionAreoChauffage(int Interieur, int Exterieur)
 {
@@ -122,10 +159,12 @@ int MesureHygro()
   //Retourne la valeur mesurée
    MesureFaite.TypeMesure=HygroM;
 //Lecture de la mesure
-   MesureFaite.ValMesure=0;  ///////////////////////////////A modifier
-   return MesureFaite.ValMesure;
+   MesureFaite.ValMesure=analogRead(PinHygro);  
+//Enregistrement de la mesure dans la PROM
+   PointeurEEPROM=EcrireEEPROM(PointeurEEPROM, &MesureFaite);   
+   return MesureFaite.ValMesure; 
 }
-void GestioVanne(int Hygro)
+void GestionVanne(int Hygro)
 {
   //Agit sur l'electrovanne en fonction de l'hygrométrie
   
@@ -135,7 +174,9 @@ int MesureLumiere()
   //Mesure la luminosité. Idem, stocke et retourne la valeur mesurée
    MesureFaite.TypeMesure=LuminositeM;
 //Lecture de la mesure
-   MesureFaite.ValMesure=0;  ///////////////////////////////A modifier
+   MesureFaite.ValMesure=analogRead(PinLuminosite);  
+//Enregistrement de la mesure dans la PROM
+   PointeurEEPROM=EcrireEEPROM(PointeurEEPROM, &MesureFaite);   
    return MesureFaite.ValMesure;  
 }
 void GestionLumiere(int LumiereMesuree)
@@ -179,9 +220,10 @@ void setup() {
   TempIntMax=0;
   TempExtMin=0;
   TempExtMax=0;
-  
 //Demande a faire une mesure : initialise donc le cycle
-DebutScript=true;
+  DebutScript=true;
+//Initialise le pointeur d'eeprom
+  PointeurEEPROM=0;  
 }
 
 void loop() {
@@ -210,7 +252,7 @@ void loop() {
      TempInt=MesureTemp(TempIntM);
      TempExt=MesureTemp(TempExtM);
      GestionAreoChauffage(TempInt, TempExt);
-     GestioVanne(MesureHygro());
+     GestionVanne(MesureHygro());
      GestionLumiere(MesureLumiere());
      ReinitialiseMesure(); 
   }
