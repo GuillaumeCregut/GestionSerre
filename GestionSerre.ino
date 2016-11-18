@@ -14,19 +14,11 @@ int TempExt, TempInt, TempIntMin, TempIntMax,TempExtMin, TempExtMax ;  //Retour 
 bool FaireMesure;   //Toggle pour déclencher les mesures. En fonction de la période des mesures
 bool DebutScript; // indique qu'on démarre la carte
 int TrigHygro, TrigTemp, TrigLumiere;  //valeur a partir du moment ou on arrose, aere ou allume la lumière
+int PointeurEEPROM;  //Pointeur de position dans la prom. Pas forcement INT, a voir !
 byte TempoTrig,HeureMesure; //Delai en heure entre 2 mesures, Heure de la dernière mesure
 //Structure pour lire et écrire dans la RTC
 DateRTC DateMesure;
-struct MesureEEPROM //Structure pour la lecture ou l'écriture d'une mesure
-{
-  int TypeMesure;
-  byte HeureEEPROM;
-  byte MinuteEEPROM;
-  byte MoisEEPROM;
-  byte JourEEPROM;
-  byte AnneeEEPROM;
-  int ValMesure; 
-};
+MesureEEPROM MesureFaite;  //Génère une structure type mesure
 
 //Déclarations des constantes globales
   //Adresses Bus
@@ -49,8 +41,8 @@ struct MesureEEPROM //Structure pour la lecture ou l'écriture d'une mesure
 //Bus
 
 //Declaration des types de mesures
-#define TempExt 1
-#define TempInt 2
+#define TempExtM 1
+#define TempIntM 2
 #define HygroM 3
 #define LuminositeM 4
 //déclarations fonctions
@@ -98,39 +90,28 @@ void EcrireRTC(DateRTC *date)
   Wire.write(0);
   Wire.endTransmission(); //Fin d'écriture de la demande RTC
 }
-void MesureTemp()  //Mesure la températures
+int EcrireEEPROM(int debut, MesureEEPROM *MesureAEnregistrer)
+{
+
+ 
+}
+int MesureTemp(int TypeTemp)  //Mesure la températures
 {
 /* * * * * * * * * * * * * * * * * *  
  *  Voir pour améliorer la boucle  *
  * * * * * * * * * * * * * * * * * */
   //Mesure la température intérieure, extérieure. Compare avec le min et le max, et si valeurdépassée, stocke en EEPROM
   //Stocke les valeurs dans les variables globales, pour les fonctions de traitement
-   MesureEEPROM MesureTemp;  //Génère une structure type mesure
-  //Récupère la date et l'heure du RTC
-   MesureTemp.HeureEEPROM=DateMesure.heures;
-   MesureTemp.MinuteEEPROM=DateMesure.minutes;
-   MesureTemp.JourEEPROM=DateMesure.jour;
-   MesureTemp.MoisEEPROM=DateMesure.mois;
-   MesureTemp.AnneeEEPROM=DateMesure.annee;
-//Mesure interieure
-   MesureTemp.TypeMesure=TempInt;
+   MesureFaite.TypeMesure=TypeTemp;
 //Lecture de la mesure
-   MesureTemp.ValMesure=0;  ///////////////////////////////A modifier
+   MesureFaite.ValMesure=0;  ///////////////////////////////A modifier
 //Vérifie sur mesureTemp.ValMesure<min ou >max
 //Si mesure correspond, on stocke min ou max, et on memorise
   
 //Enregistrement de la mesure dans la PROM
-
-//Mesure temp Ext
-   MesureTemp.TypeMesure=TempExt;
-      MesureTemp.ValMesure=0;  ///////////////////////////////A modifier
-//Vérifie sur mesureTemp.ValMesure<min ou >max
-//Si mesure correspond, on stocke min ou max, et on memorise
-  
-//Enregistrement de la mesure dans la PROM
-
+  EcrireEEPROM(PointeurEEPROM, &MesureFaite);
 }
-void GestionAreoChauffage()
+void GestionAreoChauffage(int Interieur, int Exterieur)
 {
   //En fonction de la température, algorithme qui défini l'ouverture de la serre, la mise en route du ventilo ou le chauffage
   
@@ -139,18 +120,10 @@ int MesureHygro()
 {
   //Mesure l'hygrométrie et la stocke en mémoire
   //Retourne la valeur mesurée
-   MesureEEPROM MesureTemp;  //Génère une structure type mesure
-  //Récupère la date et l'heure du RTC
-   MesureTemp.HeureEEPROM=DateMesure.heures;
-   MesureTemp.MinuteEEPROM=DateMesure.minutes;
-   MesureTemp.JourEEPROM=DateMesure.jour;
-   MesureTemp.MoisEEPROM=DateMesure.mois;
-   MesureTemp.AnneeEEPROM=DateMesure.annee;
-//Mesure interieure
-   MesureTemp.TypeMesure=HygroM;
+   MesureFaite.TypeMesure=HygroM;
 //Lecture de la mesure
-   MesureTemp.ValMesure=0;  ///////////////////////////////A modifier
-   return MesureTemp.ValMesure;
+   MesureFaite.ValMesure=0;  ///////////////////////////////A modifier
+   return MesureFaite.ValMesure;
 }
 void GestioVanne(int Hygro)
 {
@@ -160,18 +133,10 @@ void GestioVanne(int Hygro)
 int MesureLumiere()
 {
   //Mesure la luminosité. Idem, stocke et retourne la valeur mesurée
-   MesureEEPROM MesureTemp;  //Génère une structure type mesure
-  //Récupère la date et l'heure du RTC
-   MesureTemp.HeureEEPROM=DateMesure.heures;
-   MesureTemp.MinuteEEPROM=DateMesure.minutes;
-   MesureTemp.JourEEPROM=DateMesure.jour;
-   MesureTemp.MoisEEPROM=DateMesure.mois;
-   MesureTemp.AnneeEEPROM=DateMesure.annee;
-//Mesure interieure
-   MesureTemp.TypeMesure=LuminositeM;
+   MesureFaite.TypeMesure=LuminositeM;
 //Lecture de la mesure
-   MesureTemp.ValMesure=0;  ///////////////////////////////A modifier
-   return MesureTemp.ValMesure;  
+   MesureFaite.ValMesure=0;  ///////////////////////////////A modifier
+   return MesureFaite.ValMesure;  
 }
 void GestionLumiere(int LumiereMesuree)
 {
@@ -235,9 +200,16 @@ void loop() {
   }
   if (FaireMesure or DebutScript)
   {
+     //Stockage de la date et de l'heure
+     MesureFaite.HeureEEPROM=DateMesure.heures;
+     MesureFaite.MinuteEEPROM=DateMesure.minutes;
+     MesureFaite.JourEEPROM=DateMesure.jour;
+     MesureFaite.MoisEEPROM=DateMesure.mois;
+     MesureFaite.AnneeEEPROM=DateMesure.annee;
      DebutScript=false;  //On a démarrer la carte, on fait la mesure
-     MesureTemp();
-     GestionAreoChauffage();
+     TempInt=MesureTemp(TempIntM);
+     TempExt=MesureTemp(TempExtM);
+     GestionAreoChauffage(TempInt, TempExt);
      GestioVanne(MesureHygro());
      GestionLumiere(MesureLumiere());
      ReinitialiseMesure(); 
