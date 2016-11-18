@@ -2,7 +2,7 @@
 /*            Gestion Serre intelligente             */
 /*   G. Cregut                                       */
 /*   DATE Création : 14/11/2016                      */
-/*   Date Modification : 16/11/2016                  */
+/*   Date Modification : 18/11/2016                  */
 /* (c)2016 Editiel98                                 */
 /* * * * * * * * * * * * * * * * * * * * * * * * * * */
 
@@ -10,7 +10,12 @@
 #include <Wire.h>  //pour l'EEPROM, la RTC et l'écran.
 #include <EEPROM.h> // Pour le stockage des paramètres dans la PROM de l'arduino
 #include "structDate.h" //stucture de la date
-//Déclarations variables globales
+
+/* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * */
+/*                                                                         */
+/*                        Déclarations variables globales                  */
+/*                                                                         */
+/* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * */
 int TempExt, TempInt, TempMin, TempMax ;  //Retour des mesures de températures
 bool FaireMesure;   //Toggle pour déclencher les mesures. En fonction de la période des mesures
 bool DebutScript; // indique qu'on démarre la carte
@@ -21,9 +26,16 @@ byte TempoTrig,HeureMesure; //Delai en heure entre 2 mesures, Heure de la derni�
 DateRTC DateMesure;
 MesureEEPROM MesureFaite;  //Génère une structure type mesure
 
-//Déclarations des constantes globales
+/* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * */
+/*                                                                         */
+/*                       Déclarations constantes globales                  */
+/*                                                                         */
+/* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * */
+
   //Adresses Bus
-#define  Adress_RTC 0
+#define Adress_RTC 0     //A changer
+#define AdresseLCD 1     //A changer
+#define AdresseEEPROM 2     //A changer
 //Entrées analogiques
 #define PinTempInt A0  //Broche connectée au capteur intérieur.
 #define PinTempExt A1
@@ -49,9 +61,14 @@ MesureEEPROM MesureFaite;  //Génère une structure type mesure
 #define TempIntM 2
 #define HygroM 3
 #define LuminositeM 4
-//déclarations fonctions
 
+/* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * */
+/*                                                                         */
+/*                          Déclarations des fonctions                     */
+/*                                                                         */
+/* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * */
 //Fonctions nécessaires pour la RTC
+  //Fonction conversion BCD vers Décimale
 byte BCD2Dec(byte bcd)
 {
   return((bcd /16*10)+(bcd%16));
@@ -60,6 +77,7 @@ byte Dec2BCD(byte dec)
 {
   return((dec/10*16)+(dec%10));
 }
+  //Fonction conversion BCD vers Décimale
 void RecupereDateHeure(DateRTC *date)
 {
   //Récupère la date de la RTC
@@ -78,6 +96,7 @@ void RecupereDateHeure(DateRTC *date)
   //Stocke l'heure de mesure
   HeureMesure=date->heures;
 }
+
 void EcrireRTC(DateRTC *date)
 {
   byte Drop;   //on s'en fout
@@ -94,6 +113,8 @@ void EcrireRTC(DateRTC *date)
   Wire.write(0);
   Wire.endTransmission(); //Fin d'écriture de la demande RTC
 }
+
+//Fonction de gestion de l'EEPROM I2C
 int EcrireEEPROM(int debut,MesureEEPROM *MesureAEnregistrer)
 {
 //Verifions si on déborde pas.... On est à l'adresse d'écriture
@@ -107,6 +128,11 @@ int EcrireEEPROM(int debut,MesureEEPROM *MesureAEnregistrer)
   return debut;
 }
 
+/* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * */
+/*                                                                         */
+/*                         Fonctions mesures et actions                    */
+/*                                                                         */
+/* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * */  
 int MesureTemp(int TypeTemp)  //Mesure la températures
 {
   int AdresseMin,  AdresseMax, ValeurLue;
@@ -145,12 +171,10 @@ int MesureTemp(int TypeTemp)  //Mesure la températures
            EEPROM.put(AdresseMax,MesureFaite.ValMesure);
        }
    }
-
-//Si mesure correspond, on stocke min ou max, et on memorise
-  
 //Enregistrement de la mesure dans la PROM
   PointeurEEPROM=EcrireEEPROM(PointeurEEPROM, &MesureFaite);
 }
+                     /********Fonction Gestion de Chauffage / Aération********/  
 void GestionAreoChauffage(int Interieur, int Exterieur)
 {
   //En fonction de la température, algorithme qui défini l'ouverture de la serre, la mise en route du ventilo ou le chauffage
@@ -158,6 +182,8 @@ void GestionAreoChauffage(int Interieur, int Exterieur)
   
   
 }
+
+/********Fonction Mesure Hyrgro********/
 int MesureHygro()
 {
   //Mesure l'hygrométrie et la stocke en mémoire
@@ -169,6 +195,8 @@ int MesureHygro()
    PointeurEEPROM=EcrireEEPROM(PointeurEEPROM, &MesureFaite);   
    return MesureFaite.ValMesure; 
 }
+
+/********Fonction Gestion de Vanne********/
 void GestionVanne(int Hygro)
 {
   //Agit sur l'electrovanne en fonction de l'hygrométrie
@@ -192,6 +220,8 @@ void GestionVanne(int Hygro)
     }
   }  
 }
+
+/********Fonction Mesure Luminosité********/
 int MesureLumiere()
 {
   //Mesure la luminosité. Idem, stocke et retourne la valeur mesurée
@@ -242,7 +272,12 @@ void ReinitialiseMesure()
   HeureMesure=DateMesure.heures+TempoTrig;
 }
 
-//Initialisation
+/* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * */
+/*                                Initialisation                                       */
+/*  On Va cherches les infos diverses dans l'eeprom                                    */
+/*  On initialise les différentes broches des ports                                    */
+/*  On initialise la mémoire EEPROM extérieure                                         */
+/* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * */
 void setup() {
   //Initialisation système
 //Initialise les bus
@@ -264,25 +299,26 @@ void setup() {
   EEPROM.get(sizeof(int)*4,TrigOuverture);
   EEPROM.get(sizeof(int)*6,TrigHygro);
   EEPROM.get(sizeof(int)*8,TrigTemp);
-  EEPROM.get(sizeof(int)*9,TrigLumiere);
-//Lecture   
-  EEPROM.get(sizeof(int)*10,TempoTrig);
+  EEPROM.get(sizeof(int)*7,TrigLumiere);
+//Lecture de l'intervalle de mesure  
+  EEPROM.get(sizeof(int)*9,TempoTrig);
  
 //Demande a faire une mesure : initialise donc le cycle
   DebutScript=true;
 //Initialise le pointeur d'eeprom
   PointeurEEPROM=0;  
 }
-
+/* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * */
+/*                                 Boucle principale                                               */
+/*              On releve la date/heure et on regarde si on doit faire une mesure, puis on         */
+/*              on regarde si on a appuyer sur une touche haut ou bas.                             */
+/*              Ensuite, on regarde si on doit entrer dans le menu. Enfin on repart au début       */
+/* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * */
 void loop() {
 //Boucle principale.
  byte HeureActu;
   //Faire mesure est calculée en fonction de la l'heure de la dernière mesure
-    //Calcul de FaireMesure 
-/* * * * * * * * * * * * * * * * * * *    
- *  On va lire l'heure sur la RTC    *
- *  Puis comparer avec le trig       *
- * * * * * * * * * * * * * * * * * * */
+//On va lire l'heure sur la RTC Puis comparer avec le trig      
   RecupereDateHeure(&DateMesure); 
   if  (DateMesure.heures>=HeureMesure)
   {
@@ -304,5 +340,5 @@ void loop() {
      GestionLumiere(MesureLumiere());
      ReinitialiseMesure(); 
   }
-  
+  //Scan des boutons
 }
