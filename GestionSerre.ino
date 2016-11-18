@@ -133,6 +133,21 @@ void I2CEEPROMWrite(int Adresse,byte Valeur)
   Wire.endTransmission();
   delay(5);                    
 }
+
+                     /********Fonction Lecture d'un octet en mémoire ********/ 
+byte I2CEEPROMRead(int Adresse)
+{
+  byte tempo=0xFF;  //Au cas ou on ai rien lu
+  Wire.beginTransmission(AdresseEEPROM);  //adresse de la prom
+  Wire.write((Adresse>>8)&0xFF);
+  Wire.write((Adresse>>0)&0xFF);
+  Wire.endTransmission();
+  delay(5);
+  Wire.requestFrom(AdresseEEPROM,1);
+  tempo=Wire.read();
+  delay(5);
+  return tempo;
+}
                      /********Fonction Gestion de l'EEPROM I2C********/ 
 //Fonction écriture dans l'EEPROM I2C
 int EcrireEEPROM(int debut,MesureEEPROM *MesureAEnregistrer)
@@ -165,7 +180,10 @@ int EcrireEEPROM(int debut,MesureEEPROM *MesureAEnregistrer)
    MesuresAEcrire[7]=LSBVal;
   //Verifions si on déborde pas.... On est à l'adresse d'écriture
   //Si adresse+taille enregistrement >taille EEPROM, adresse=0
-
+  if (debut>65527)
+  {
+    debut=0;
+  }
   //Ecrit dans l'eeprom
    for (int i=0;i<8;i++)
    {
