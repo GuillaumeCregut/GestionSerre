@@ -54,6 +54,7 @@ MesureEEPROM MesureFaite;  //Génère une structure type mesure
 #define PinChauffage 7
 #define PinServo 8
 #define PinLumiere 9
+
 //Bus
 
 //Declaration des types de mesures
@@ -67,17 +68,19 @@ MesureEEPROM MesureFaite;  //Génère une structure type mesure
 /*                          Déclarations des fonctions                     */
 /*                                                                         */
 /* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * */
-//Fonctions nécessaires pour la RTC
+
+                     /********Fonctions nécessaires pour la RTC********/ 
   //Fonction conversion BCD vers Décimale
 byte BCD2Dec(byte bcd)
 {
   return((bcd /16*10)+(bcd%16));
 }
+  //Fonction conversion Décimale vers BCD
 byte Dec2BCD(byte dec)
 {
   return((dec/10*16)+(dec%10));
 }
-  //Fonction conversion BCD vers Décimale
+                     /********Fonction Lecture de la RTC********/ 
 void RecupereDateHeure(DateRTC *date)
 {
   //Récupère la date de la RTC
@@ -97,6 +100,7 @@ void RecupereDateHeure(DateRTC *date)
   HeureMesure=date->heures;
 }
 
+                     /********Fonction Ecriture de la RTC********/ 
 void EcrireRTC(DateRTC *date)
 {
   byte Drop;   //on s'en fout
@@ -114,7 +118,8 @@ void EcrireRTC(DateRTC *date)
   Wire.endTransmission(); //Fin d'écriture de la demande RTC
 }
 
-//Fonction de gestion de l'EEPROM I2C
+                     /********Fonction Gestion de l'EEPROM I2C********/ 
+//Fonction écriture dans l'EEPROM I2C
 int EcrireEEPROM(int debut,MesureEEPROM *MesureAEnregistrer)
 {
 //Verifions si on déborde pas.... On est à l'adresse d'écriture
@@ -139,7 +144,7 @@ int MesureTemp(int TypeTemp)  //Mesure la températures
   //Mesure la température intérieure, extérieure. Compare avec le min et le max, et si valeurdépassée, stocke en EEPROM
   //Stocke les valeurs dans les variables globales, pour les fonctions de traitement
    MesureFaite.TypeMesure=TypeTemp;
-//Lecture de la mesure
+  //Lecture de la mesure
   switch(TypeTemp)  //En fonction du type de capteur (interieur ou exterieur)
   {
     case TempExtM :
@@ -155,7 +160,7 @@ int MesureTemp(int TypeTemp)  //Mesure la températures
       AdresseMax=sizeof(int); //La valeur temp Int Max est la suivante, soit 0+taille de int
       break; 
   }  
-//Vérifie sur mesureTemp.ValMesure<min ou >max
+  //Vérifie sur mesureTemp.ValMesure<min ou >max
    EEPROM.get(AdresseMin,ValeurLue);  //On récupère la temp Min
    if (MesureFaite.ValMesure<ValeurLue)
    {
@@ -171,9 +176,10 @@ int MesureTemp(int TypeTemp)  //Mesure la températures
            EEPROM.put(AdresseMax,MesureFaite.ValMesure);
        }
    }
-//Enregistrement de la mesure dans la PROM
+  //Enregistrement de la mesure dans la PROM
   PointeurEEPROM=EcrireEEPROM(PointeurEEPROM, &MesureFaite);
 }
+
                      /********Fonction Gestion de Chauffage / Aération********/  
 void GestionAreoChauffage(int Interieur, int Exterieur)
 {
@@ -183,20 +189,20 @@ void GestionAreoChauffage(int Interieur, int Exterieur)
   
 }
 
-/********Fonction Mesure Hyrgro********/
+                     /********Fonction Mesure Hyrgro********/
 int MesureHygro()
 {
   //Mesure l'hygrométrie et la stocke en mémoire
   //Retourne la valeur mesurée
    MesureFaite.TypeMesure=HygroM;
-//Lecture de la mesure
+   //Lecture de la mesure
    MesureFaite.ValMesure=analogRead(PinHygro);  
-//Enregistrement de la mesure dans la PROM
+   //Enregistrement de la mesure dans la PROM
    PointeurEEPROM=EcrireEEPROM(PointeurEEPROM, &MesureFaite);   
    return MesureFaite.ValMesure; 
 }
 
-/********Fonction Gestion de Vanne********/
+                     /********Fonction Gestion de Vanne********/
 void GestionVanne(int Hygro)
 {
   //Agit sur l'electrovanne en fonction de l'hygrométrie
@@ -221,17 +227,19 @@ void GestionVanne(int Hygro)
   }  
 }
 
-/********Fonction Mesure Luminosité********/
+                     /********Fonction Mesure Luminosité********/
 int MesureLumiere()
 {
   //Mesure la luminosité. Idem, stocke et retourne la valeur mesurée
-   MesureFaite.TypeMesure=LuminositeM;
-//Lecture de la mesure
-   MesureFaite.ValMesure=analogRead(PinLuminosite);  
-//Enregistrement de la mesure dans la PROM
-   PointeurEEPROM=EcrireEEPROM(PointeurEEPROM, &MesureFaite);   
-   return MesureFaite.ValMesure;  
+  MesureFaite.TypeMesure=LuminositeM;
+  //Lecture de la mesure
+  MesureFaite.ValMesure=analogRead(PinLuminosite);  
+  //Enregistrement de la mesure dans la PROM
+  PointeurEEPROM=EcrireEEPROM(PointeurEEPROM, &MesureFaite);   
+  return MesureFaite.ValMesure;  
 }
+
+                     /********Fonction Gestion Lumiere********/
 void GestionLumiere(int LumiereMesuree)
 {
   //En fonction de la lumière, allume ou non la lumière
@@ -280,34 +288,38 @@ void ReinitialiseMesure()
 /* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * */
 void setup() {
   //Initialisation système
-//Initialise les bus
-//Initialise les ports
+  
+  //Initialise les bus
+  
+  //Initialise les ports
   pinMode(BoutonMenu, INPUT_PULLUP);
   pinMode(BoutonGauche, INPUT_PULLUP);
   pinMode(BoutonDroit, INPUT_PULLUP);
   pinMode(BoutonHaut, INPUT_PULLUP);
   pinMode(BoutonBas, INPUT_PULLUP);
-//Mise à 0 de toutes les sorties
+  //Mise à 0 de toutes les sorties
   digitalWrite(PinVanne,LOW);  //On arrete la vanne
   digitalWrite(PinLumiere,LOW);  //On arrete la lumière
   digitalWrite(PinChauffage,LOW);  //On arrete le chauffage
-//initialise les affichages
-//initialise l'horloge (en provenance de l'horloge)
+  //initialise les affichages
+  
+  //initialise l'horloge (en provenance de l'horloge)
   RecupereDateHeure(&DateMesure);
   FaireMesure=true;
-//Lecture de l'eeprom et mise en place des min max
+  //Lecture de l'eeprom et mise en place des min max
   EEPROM.get(sizeof(int)*4,TrigOuverture);
   EEPROM.get(sizeof(int)*6,TrigHygro);
   EEPROM.get(sizeof(int)*8,TrigTemp);
   EEPROM.get(sizeof(int)*7,TrigLumiere);
-//Lecture de l'intervalle de mesure  
+  //Lecture de l'intervalle de mesure  
   EEPROM.get(sizeof(int)*9,TempoTrig);
  
-//Demande a faire une mesure : initialise donc le cycle
+  //Demande a faire une mesure : initialise donc le cycle
   DebutScript=true;
-//Initialise le pointeur d'eeprom
+  //Initialise le pointeur d'eeprom
   PointeurEEPROM=0;  
 }
+
 /* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * */
 /*                                 Boucle principale                                               */
 /*              On releve la date/heure et on regarde si on doit faire une mesure, puis on         */
@@ -315,10 +327,10 @@ void setup() {
 /*              Ensuite, on regarde si on doit entrer dans le menu. Enfin on repart au début       */
 /* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * */
 void loop() {
-//Boucle principale.
- byte HeureActu;
+  //Boucle principale.
+  byte HeureActu;
   //Faire mesure est calculée en fonction de la l'heure de la dernière mesure
-//On va lire l'heure sur la RTC Puis comparer avec le trig      
+  //On va lire l'heure sur la RTC Puis comparer avec le trig      
   RecupereDateHeure(&DateMesure); 
   if  (DateMesure.heures>=HeureMesure)
   {
