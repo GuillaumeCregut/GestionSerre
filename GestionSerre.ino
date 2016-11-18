@@ -11,10 +11,10 @@
 #include <EEPROM.h> // Pour le stockage des paramètres dans la PROM de l'arduino
 #include "structDate.h" //stucture de la date
 //Déclarations variables globales
-int TempExt, TempInt, TempIntMin, TempIntMax,TempExtMin, TempExtMax ;  //Retour des mesures de températures
+int TempExt, TempInt, TempMin, TempMax ;  //Retour des mesures de températures
 bool FaireMesure;   //Toggle pour déclencher les mesures. En fonction de la période des mesures
 bool DebutScript; // indique qu'on démarre la carte
-int TrigHygro, TrigTemp, TrigLumiere;  //valeur a partir du moment ou on arrose, aere ou allume la lumière
+int TrigHygro, TrigTemp, TrigLumiere,TrigOuverture;  //valeur a partir du moment ou on arrose, aere ou allume la lumière
 int PointeurEEPROM;  //Pointeur de position dans la prom. Pas forcement INT, a voir !
 byte TempoTrig,HeureMesure; //Delai en heure entre 2 mesures, Heure de la dernière mesure
 //Structure pour lire et écrire dans la RTC
@@ -30,15 +30,18 @@ MesureEEPROM MesureFaite;  //Génère une structure type mesure
 #define PinHygro A2
 #define PinLuminosite A3
 
-//Entrées numériques
+//Entrées numériques  //Changer les valeurs
 #define BoutonMenu 1
 #define BoutonHaut 2
 #define BoutonGauche 3
 #define BoutonDroit 4
 #define BoutonBas 5
 
-//sorties
-
+//sorties  //Changer les valeurs
+#define PinVanne 6
+#define PinChauffage 7
+#define PinServo 8
+#define PinLumiere 9
 //Bus
 
 //Declaration des types de mesures
@@ -103,6 +106,7 @@ int EcrireEEPROM(int debut,MesureEEPROM *MesureAEnregistrer)
   debut=debut+sizeof(MesureEEPROM);  
   return debut;
 }
+
 int MesureTemp(int TypeTemp)  //Mesure la températures
 {
   int AdresseMin,  AdresseMax, ValeurLue;
@@ -130,18 +134,17 @@ int MesureTemp(int TypeTemp)  //Mesure la températures
    if (MesureFaite.ValMesure<ValeurLue)
    {
       //On stocke la valeur et on passe
-      EEPROM.put(AdresseMin,TempIntMin); 
+      EEPROM.put(AdresseMin,MesureFaite.ValMesure); 
    }
-   else
+   else  //Si la mesure est au dessus de la min elle peut etre max.
    {
-       EEPROM.get(AdresseMax,ValeurLue);  //On récupère la temp Min
+       EEPROM.get(AdresseMax,ValeurLue);  //On récupère la temp Max
        if (MesureFaite.ValMesure>ValeurLue)
        {
           //On stocke la valeur max
            EEPROM.put(AdresseMax,MesureFaite.ValMesure);
        }
    }
-  //On va lire dans l'EEPROM de l'arduino ces valeurs
 
 //Si mesure correspond, on stocke min ou max, et on memorise
   
@@ -151,6 +154,8 @@ int MesureTemp(int TypeTemp)  //Mesure la températures
 void GestionAreoChauffage(int Interieur, int Exterieur)
 {
   //En fonction de la température, algorithme qui défini l'ouverture de la serre, la mise en route du ventilo ou le chauffage
+  //TrigTemp,TrigOuverture
+  
   
 }
 int MesureHygro()
@@ -167,7 +172,25 @@ int MesureHygro()
 void GestionVanne(int Hygro)
 {
   //Agit sur l'electrovanne en fonction de l'hygrométrie
-  
+  int HygroBascule;
+  //On créé un trigger de schmitt pour ne pas faire que arroser arret arrosage
+  HygroBascule=(TrigHygro/100);
+  HygroBascule=(HygroBascule*10)+TrigHygro;   //10% inférieur au seuil
+  if (Hygro<HygroBascule)
+  {
+    //On ouvre la vanne
+    digitalWrite(PinVanne,HIGH);
+  }
+  else  //si on est pas en bas, on peut etre en haut...
+  {
+    HygroBascule=(TrigHygro/100);
+    HygroBascule=(HygroBascule*20)+TrigHygro;  //20 % supérieur au seuil
+    if (Hygro>HygroBascule)
+    {
+    //On ferme la vanne
+      digitalWrite(PinVanne,LOW);
+    }
+  }  
 }
 int MesureLumiere()
 {
@@ -182,7 +205,25 @@ int MesureLumiere()
 void GestionLumiere(int LumiereMesuree)
 {
   //En fonction de la lumière, allume ou non la lumière
-  
+  int LumiereBascule;
+  //On créé un trigger de schmitt pour ne pas faire que arroser arret arrosage
+  LumiereBascule=(TrigLumiere/100);
+  LumiereBascule=(LumiereBascule*10)+TrigLumiere;   //10% inférieur au seuil
+  if (LumiereMesuree<LumiereBascule)
+  {
+    //On allume la lumière
+    digitalWrite(PinVanne,HIGH);
+  }
+  else  //si on est pas en bas, on peut etre en haut...
+  {
+    LumiereBascule=(TrigLumiere/100);
+    LumiereBascule=(LumiereBascule*20)+TrigLumiere;  //20 % supérieur au seuil
+    if (LumiereMesuree>LumiereBascule)
+    {
+    //On éteint la lumière
+      digitalWrite(PinLumiere,LOW);
+    }
+  }    
 }
 
 void GestionMenu()
@@ -211,15 +252,22 @@ void setup() {
   pinMode(BoutonDroit, INPUT_PULLUP);
   pinMode(BoutonHaut, INPUT_PULLUP);
   pinMode(BoutonBas, INPUT_PULLUP);
+//Mise à 0 de toutes les sorties
+  digitalWrite(PinVanne,LOW);  //On arrete la vanne
+  digitalWrite(PinLumiere,LOW);  //On arrete la lumière
+  digitalWrite(PinChauffage,LOW);  //On arrete le chauffage
 //initialise les affichages
 //initialise l'horloge (en provenance de l'horloge)
   RecupereDateHeure(&DateMesure);
   FaireMesure=true;
 //Lecture de l'eeprom et mise en place des min max
-  TempIntMin=0;
-  TempIntMax=0;
-  TempExtMin=0;
-  TempExtMax=0;
+  EEPROM.get(sizeof(int)*4,TrigOuverture);
+  EEPROM.get(sizeof(int)*6,TrigHygro);
+  EEPROM.get(sizeof(int)*8,TrigTemp);
+  EEPROM.get(sizeof(int)*9,TrigLumiere);
+//Lecture   
+  EEPROM.get(sizeof(int)*10,TempoTrig);
+ 
 //Demande a faire une mesure : initialise donc le cycle
   DebutScript=true;
 //Initialise le pointeur d'eeprom
