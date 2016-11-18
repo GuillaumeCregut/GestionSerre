@@ -7,7 +7,7 @@ Option mémorisation des relevés min et max avec date, etc...
 Actionneurs :
 -Electrovanne d'alimentation en eau
 -Servo moteur d'ouverture de la toiture
--Ventilateur
+-Chauffage
 -Lumière
 
 Capteurs :
@@ -54,3 +54,9 @@ Si option, paramètres IP et protocole domoticos
 En cas d'appui sur bouton, le rétro éclairage s'allume
 Extinction après 5 sec d'inactivité.
 
+Fonctionnement
+Le système effectue une mesure tout les x temps (en minutes) et si les seuils sont :
+-10 % en dessous de la valeur, alors on active la fonction
+-20 % au dessus de la valeur, alors on arrete la fonction
+
+Pour la gestion de la température, on agit comme cela :
