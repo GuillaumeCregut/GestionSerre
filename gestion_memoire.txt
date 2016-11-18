@@ -4,7 +4,7 @@ Adresse 0+1int : TempIntMax,int
 Adresse 0+2int : TempExtMin,int
 Adresse 0+3int : TempExtMax,int
 Adresse 0+4int : TMaxOuverture, int
-Adresse 0+5int : TMinChauffage, int
+Adresse 0+5int : *vide*, int
 Adresse 0+6int : TriggerVanne, int
 Adresse 0+7int : TrigLumiere,int
 Adresse 0+8int : TrigTemperature,int
