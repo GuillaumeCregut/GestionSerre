@@ -16,3 +16,14 @@ typedef struct {
   uint8_t mois; 
   uint8_t annee; // format yy (ex 2012 -> 12)
 } DateRTC;
+
+typedef struct
+{
+  int TypeMesure;
+  uint8_t HeureEEPROM;
+  uint8_t MinuteEEPROM;
+  uint8_t MoisEEPROM;
+  uint8_t JourEEPROM;
+  uint8_t AnneeEEPROM;
+  int ValMesure; 
+} MesureEEPROM; //Structure pour la lecture ou l'écriture d'une mesure;
