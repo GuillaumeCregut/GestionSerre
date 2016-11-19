@@ -2,7 +2,7 @@
 /*            Gestion Serre intelligente             */
 /*   G. Cregut                                       */
 /*   DATE Création : 14/11/2016                      */
-/*   Date Modification : 18/11/2016                  */
+/*   Date Modification : 19/11/2016                  */
 /* (c)2016 Editiel98                                 */
 /* * * * * * * * * * * * * * * * * * * * * * * * * * */
 
@@ -19,6 +19,7 @@
 int TempExt, TempInt, TempMin, TempMax ;  //Retour des mesures de températures
 bool FaireMesure;   //Toggle pour déclencher les mesures. En fonction de la période des mesures
 bool DebutScript; // indique qu'on démarre la carte
+bool InMenu; //Défini si on est entrer dans le menu ou non
 int TrigHygro, TrigTemp, TrigLumiere,TrigOuverture;  //valeur a partir du moment ou on arrose, aere ou allume la lumière
 int PointeurEEPROM;  //Pointeur de position dans la prom. Pas forcement INT, a voir !
 byte TempoTrig,HeureMesure; //Delai en heure entre 2 mesures, Heure de la dernière mesure
@@ -180,7 +181,7 @@ int EcrireEEPROM(int debut,MesureEEPROM *MesureAEnregistrer)
    MesuresAEcrire[7]=LSBVal;
   //Verifions si on déborde pas.... On est à l'adresse d'écriture
   //Si adresse+taille enregistrement >taille EEPROM, adresse=0
-  if (debut>65527)
+  if (debut>65527)  //65535-8 car on a 8 octets dans l'enregistrement
   {
     debut=0;
   }
@@ -328,6 +329,10 @@ void GestionLumiere(int LumiereMesuree)
 void GestionMenu()
 {
   //Gestion du menu
+  InMenu=true; //On informe que l'on est dans le menu
+
+  //en fin de menu
+  InMenu=false;
 }
 void Touche_Appuyee()
 {
@@ -349,7 +354,7 @@ void ReinitialiseMesure()
 /* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * */
 void setup() {
   //Initialisation système
-  
+  InMenu=false;
   //Initialise les bus
   
   //Initialise les ports
