@@ -2,7 +2,7 @@
 /*            Gestion Serre intelligente             */
 /*   G. Cregut                                       */
 /*   DATE Création : 14/11/2016                      */
-/*   Date Modification : 19/11/2016                  */
+/*   Date Modification : 20/11/2016                  */
 /* (c)2016 Editiel98                                 */
 /* * * * * * * * * * * * * * * * * * * * * * * * * * */
 
@@ -250,8 +250,8 @@ void GestionAreoChauffage(int Interieur, int Exterieur)
 {
   //En fonction de la température, algorithme qui défini l'ouverture de la serre, la mise en route du ventilo ou le chauffage
   //TrigTemp,TrigOuverture
-  
-  
+ // Gere_Chauffage();
+ // Gere_Volet(); 
 }
 
                      /********Fonction Mesure Hyrgro********/
@@ -278,8 +278,7 @@ void GestionVanne(int Hygro)
   if (Hygro<HygroBascule)
   {
     //On ouvre la vanne
-    digitalWrite(PinVanne,HIGH);
-    EtatVanne=true;
+    Gere_Vanne(true);
   }
   else  //si on est pas en bas, on peut etre en haut...
   {
@@ -288,8 +287,7 @@ void GestionVanne(int Hygro)
     if (Hygro>HygroBascule)
     {
     //On ferme la vanne
-      digitalWrite(PinVanne,LOW);
-      EtatVanne=false;
+      Gere_Vanne(false);
     }
   }  
 }
@@ -318,8 +316,7 @@ void GestionLumiere(int LumiereMesuree)
   if (LumiereMesuree<LumiereBascule)
   {
     //On allume la lumière
-    digitalWrite(PinVanne,HIGH);
-    EtatLumiere=true;
+    Gere_Lumiere(true);
   }
   else  //si on est pas en bas, on peut etre en haut...
   {
@@ -328,12 +325,69 @@ void GestionLumiere(int LumiereMesuree)
     if (LumiereMesuree>LumiereBascule)
     {
     //On éteint la lumière
-      digitalWrite(PinLumiere,LOW);
-      EtatLumiere=false;
+     Gere_Lumiere(false);
     }
   }    
 }
 
+                     /********Fonction Action chauffage ********/
+void Gere_Chauffage(bool EtatNouveau)
+{
+  if(EtatNouveau)
+  {
+    
+  }
+  else
+  {
+    
+  }
+}
+                     /********Fonction Action Volet ********/      
+void Gere_Volet(bool EtatNouveau)
+{
+  if(EtatNouveau)
+  {
+    
+  }
+  else
+  {
+    
+  }  
+}                     
+                     /********Fonction Action Lumière ********/
+void Gere_Lumiere(bool EtatNouveau)
+{
+  if(EtatNouveau)
+  {
+    //On allume la lumière
+    digitalWrite(PinVanne,HIGH);
+    EtatLumiere=true;
+  }
+  else
+  {
+    //On allume la lumière
+    digitalWrite(PinVanne,LOW);
+    EtatLumiere=false;
+  }  
+}
+                     /********Fonction Action vanne ********/
+void Gere_Vanne(bool EtatNouveau)
+{
+  if(EtatNouveau)
+  {
+    //On ouvre la vanne
+    digitalWrite(PinVanne,HIGH);
+    EtatVanne=true;
+  }
+  else
+  {
+    //On ouvre la vanne
+    digitalWrite(PinVanne,LOW);
+    EtatVanne=false;
+  }  
+}
+
+                     /********Fonction Menu  A (re)définir ********/
 void GestionMenu()
 {
   //Gestion du menu
