@@ -16,9 +16,10 @@
 /*                        Déclarations variables globales                  */
 /*                                                                         */
 /* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * */
-int TempExt, TempInt, TempMin, TempMax ;  //Retour des mesures de températures
+int TempExt, TempInt, MesHygro, MesLum ;  //Retour des mesures de températures
 bool FaireMesure;   //Toggle pour déclencher les mesures. En fonction de la période des mesures
 bool DebutScript; // indique qu'on démarre la carte
+bool EtatVolet, EtatLumiere,EtatVanne, EtatChauffage;
 bool InMenu; //Défini si on est entrer dans le menu ou non
 int TrigHygro, TrigTemp, TrigLumiere,TrigOuverture;  //valeur a partir du moment ou on arrose, aere ou allume la lumière
 int PointeurEEPROM;  //Pointeur de position dans la prom. Pas forcement INT, a voir !
@@ -200,7 +201,7 @@ int EcrireEEPROM(int debut,MesureEEPROM *MesureAEnregistrer)
 /*                         Fonctions mesures et actions                    */
 /*                                                                         */
 /* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * */  
-int MesureTemp(byte TypeTemp)  //Mesure la températures
+int MesureTemp(byte TypeTemp)  //Mesure la température
 {
   int AdresseMin,  AdresseMax, ValeurLue;
   //Mesure la température intérieure, extérieure. Compare avec le min et le max, et si valeurdépassée, stocke en EEPROM
@@ -214,9 +215,11 @@ int MesureTemp(byte TypeTemp)  //Mesure la températures
       //Adresse Min et Max dans l'EEPROM arduino
       AdresseMin=sizeof(int)*2;  //L'adresse Temp Ext Min est la 3ème position après 2 autres int
       AdresseMax=sizeof(int)*3;  //L'adresse Temp Ext Max est la 4ème position après 3 autres int
+      TempExt=MesureFaite.ValMesure;
       break;
     case TempIntM : 
       MesureFaite.ValMesure=analogRead(PinTempInt);
+      TempInt=MesureFaite.ValMesure;
       //Adresse Min et Max dans l'EEPROM arduino
       AdresseMin=0;  //La veleur de temp Int min est à l'adresse 0
       AdresseMax=sizeof(int); //La valeur temp Int Max est la suivante, soit 0+taille de int
@@ -255,10 +258,10 @@ void GestionAreoChauffage(int Interieur, int Exterieur)
 int MesureHygro()
 {
   //Mesure l'hygrométrie et la stocke en mémoire
-  //Retourne la valeur mesurée
    MesureFaite.TypeMesure=HygroM;
    //Lecture de la mesure
-   MesureFaite.ValMesure=analogRead(PinHygro);  
+   MesureFaite.ValMesure=analogRead(PinHygro); 
+   MesHygro=MesureFaite.ValMesure;
    //Enregistrement de la mesure dans la PROM
    PointeurEEPROM=EcrireEEPROM(PointeurEEPROM, &MesureFaite);   
    return MesureFaite.ValMesure; 
@@ -276,6 +279,7 @@ void GestionVanne(int Hygro)
   {
     //On ouvre la vanne
     digitalWrite(PinVanne,HIGH);
+    EtatVanne=true;
   }
   else  //si on est pas en bas, on peut etre en haut...
   {
@@ -285,6 +289,7 @@ void GestionVanne(int Hygro)
     {
     //On ferme la vanne
       digitalWrite(PinVanne,LOW);
+      EtatVanne=false;
     }
   }  
 }
@@ -296,6 +301,7 @@ int MesureLumiere()
   MesureFaite.TypeMesure=LuminositeM;
   //Lecture de la mesure
   MesureFaite.ValMesure=analogRead(PinLuminosite);  
+  MesLum=MesureFaite.ValMesure;
   //Enregistrement de la mesure dans la PROM
   PointeurEEPROM=EcrireEEPROM(PointeurEEPROM, &MesureFaite);   
   return MesureFaite.ValMesure;  
@@ -313,6 +319,7 @@ void GestionLumiere(int LumiereMesuree)
   {
     //On allume la lumière
     digitalWrite(PinVanne,HIGH);
+    EtatLumiere=true;
   }
   else  //si on est pas en bas, on peut etre en haut...
   {
@@ -322,6 +329,7 @@ void GestionLumiere(int LumiereMesuree)
     {
     //On éteint la lumière
       digitalWrite(PinLumiere,LOW);
+      EtatLumiere=false;
     }
   }    
 }
