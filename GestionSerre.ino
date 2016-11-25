@@ -505,6 +505,7 @@ void bouton_appuye()
              else
                EtatActionneurM="ON     ";
              EtatVanne=!EtatVanne;
+             Gere_Vanne(EtatVanne);
              AfficheHorsMenu("",EtatActionneurM);
            break;
            case MenuCdeChauff : 
@@ -515,6 +516,7 @@ void bouton_appuye()
              else
                EtatActionneurM="ON     ";
              EtatChauffage=!EtatChauffage;
+             Gere_Chauffage(EtatChauffage);
              AfficheHorsMenu("",EtatActionneurM);
            break;  
            case MenuCdeLum : 
@@ -525,6 +527,7 @@ void bouton_appuye()
              else
                EtatActionneurM="ON     ";
              EtatLumiere=!EtatLumiere;
+             Gere_Lumiere(EtatLumiere);
              AfficheHorsMenu("",EtatActionneurM);
            break;    
            case MenuCdeVolet : 
@@ -534,7 +537,8 @@ void bouton_appuye()
              }
              else
                EtatActionneurM="ON     ";
-             EtatVolet=!EtatVolet;           
+             EtatVolet=!EtatVolet;
+             Gere_Volet(EtatVolet);          
              AfficheHorsMenu("",EtatActionneurM);
            break; 
            default :
