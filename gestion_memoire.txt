@@ -9,4 +9,5 @@ Adresse 0+6int : TriggerVanne, int
 Adresse 0+7int : TrigLumiere,int
 Adresse 0+8int : TrigTemperature,int
 Adresse 0+9int : Intervalle,Byte
-Adresse 0+9int+1Byte :
+Adresse 0+9int+1Byte : Version Byte
+Adresse 0+9int+2Byte : Sous version
