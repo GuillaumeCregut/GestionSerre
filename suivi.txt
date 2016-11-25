@@ -1,0 +1,7 @@
+Suivi du développement :
+25/11/2016 :
+  Intégration du menu dans le code.
+  Compilation OK, mais il faudra traiter la gestion de l'afficheur dans le menu afficheHorsMenu
+  Reste à développer la gestion de la récupération du nombre d'enregistrement dans l'eeprom.
+  Faire le traitement action chaffage/volet
+  Définir la fonction de lecture de la structure d'enregistrements dans l'EEPROM I2C
