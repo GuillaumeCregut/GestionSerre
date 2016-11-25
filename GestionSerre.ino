@@ -2,7 +2,7 @@
 /*            Gestion Serre intelligente             */
 /*   G. Cregut                                       */
 /*   DATE Création : 14/11/2016                      */
-/*   Date Modification : 20/11/2016                  */
+/*   Date Modification : 25/11/2016                  */
 /* (c)2016 Editiel98                                 */
 /* * * * * * * * * * * * * * * * * * * * * * * * * * */
 
@@ -24,10 +24,14 @@ bool InMenu; //Défini si on est entrer dans le menu ou non
 int TrigHygro, TrigTemp, TrigLumiere,TrigOuverture;  //valeur a partir du moment ou on arrose, aere ou allume la lumière
 int PointeurEEPROM;  //Pointeur de position dans la prom. Pas forcement INT, a voir !
 byte TempoTrig,HeureMesure; //Delai en heure entre 2 mesures, Heure de la dernière mesure
+int NombreRecord; //Nombre d'enregistrement dans l'EEPROM
 //Structure pour lire et écrire dans la RTC
 DateRTC DateMesure;
 MesureEEPROM MesureFaite;  //Génère une structure type mesure
-
+int IdMenu; //position dans le menu
+byte EntreeMenu;  //Compteur pour passer dans le menu
+byte IdHorsMenu; //Position dans le "hors menu"
+int ValeurMenu[5];
 /* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * */
 /*                                                                         */
 /*                       Déclarations constantes globales                  */
@@ -65,6 +69,22 @@ MesureEEPROM MesureFaite;  //Génère une structure type mesure
 #define HygroM 3
 #define LuminositeM 4
 
+//Définitions pour les menus
+#define MenuTempExt 0
+#define MenuTempInt 1
+#define MenuMesures 2
+#define MenuCdeVanne 3
+#define MenuCdeChauff 4
+#define MenuCdeLum 5
+#define MenuCdeVolet 6
+#define LimiteHorsMenu 6  //7 menus de 0 à 6
+#define LimiteMenu 5  //7 menus de 0 à 6
+#define MTrigOuv 0
+#define MTrigHygro 1
+#define MTrigLum 2
+#define MTrigTemp 3
+#define Mtempo 4
+#define Quitter 5
 /* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * */
 /*                                                                         */
 /*                          Déclarations des fonctions                     */
@@ -185,6 +205,7 @@ int EcrireEEPROM(int debut,MesureEEPROM *MesureAEnregistrer)
   if (debut>65527)  //65535-8 car on a 8 octets dans l'enregistrement
   {
     debut=0;
+    NombreRecord=0;
   }
   //Ecrit dans l'eeprom
    for (int i=0;i<8;i++)
@@ -193,6 +214,7 @@ int EcrireEEPROM(int debut,MesureEEPROM *MesureAEnregistrer)
    }
   //augmente le pointeur de la taille d'une structure
   debut=debut+sizeof(MesureEEPROM);  
+  NombreRecord++;
   return debut;
 }
 
@@ -387,19 +409,320 @@ void Gere_Vanne(bool EtatNouveau)
   }  
 }
 
-                     /********Fonction Menu  A (re)définir ********/
-void GestionMenu()
+                     /********Fonction Sauvegarde en EEPROM ********/
+void EcritEEPROM_Config()
 {
-  //Gestion du menu
-  InMenu=true; //On informe que l'on est dans le menu
-
-  //en fin de menu
-  InMenu=false;
+  EEPROM.write(sizeof(int)*4,TrigOuverture);
+  EEPROM.write(sizeof(int)*6,TrigHygro);
+  EEPROM.write(sizeof(int)*8,TrigTemp);
+  EEPROM.write(sizeof(int)*7,TrigLumiere);
+  //Lecture de l'intervalle de mesure  
+  EEPROM.write(sizeof(int)*9,TempoTrig);  
 }
-void Touche_Appuyee()
+
+                     /********Fonction Affichage   ********/
+/* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * */                      
+/*          Fonction a modifier en fonction de l'afficheur LCD                     */
+/* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * */
+ void AfficheHorsMenu(String MessageAAfficherL1,String MessageAAfficherL2)
+{
+  if (MessageAAfficherL1=="")
+  {
+    //on a cliquer sur menu/OK ou on change les valeurs, on change donc la ligne 2 uniquement
+  /*  MonEcran.setCursor(0,1); //On passe à la seconde ligne
+    MonEcran.print(MessageAAfficherL2);*/
+  }
+  else
+  {
+   /* MonEcran.clear(); //On efface l'écran
+    MonEcran.setCursor(0,0); //On met le curseur en début de la 1ere ligne
+    MonEcran.print(MessageAAfficherL1);
+    MonEcran.setCursor(0,1); //On passe à la seconde ligne
+    MonEcran.print(MessageAAfficherL2);*/
+  }
+}        
+
+ void AfficheMenu(int IdDuMenu)
+{
+  int ValAff;
+  switch(IdDuMenu)
+  {
+   case MTrigOuv :
+      //lecture de l'EEPROM pour trig ouverture et affichage
+      ValAff=ValeurMenu[MTrigOuv];     
+      AfficheHorsMenu("Trig Ouv",String(ValAff));
+    break;
+    case MTrigHygro :
+      ValAff=ValeurMenu[MTrigHygro];   
+      AfficheHorsMenu("Trig Hygro",String(ValAff));
+    break;
+    case MTrigLum :
+      ValAff=ValeurMenu[MTrigLum];    
+      AfficheHorsMenu("Trig Lum",String(ValAff));
+    break;
+    case MTrigTemp :
+      ValAff=ValeurMenu[MTrigTemp];      
+      AfficheHorsMenu("Trig Temp",String(ValAff));
+    break;
+    case Mtempo :
+      ValAff=ValeurMenu[Mtempo];    
+      AfficheHorsMenu("Temp",String(ValAff));
+    break;
+    case Quitter :
+      AfficheHorsMenu("Quitter ?","");
+    break;
+  }
+}           
+                     /********Fonction Menu   ********/
+void bouton_appuye()
 {
   //Gestion de l'affichage hors menu
-  
+  String AfficheMessage;
+  boolean EtatBoutonH=digitalRead(BoutonHaut);
+  boolean EtatBoutonB=digitalRead(BoutonBas);
+  boolean EtatBoutonG=digitalRead(BoutonGauche);
+  boolean EtatBoutonD=digitalRead(BoutonDroit);
+  boolean EtatBoutonM=digitalRead(BoutonMenu);
+  String EtatActionneur,EtatActionneurM;
+  if (!EtatBoutonH || !EtatBoutonB || !EtatBoutonG || !EtatBoutonD || !EtatBoutonM)
+  {
+    //on a appuyer sur un bouton
+    if (!InMenu)
+    {
+      //On est pas dans le menu
+      //a t'on appuyé sur menu ?
+      if (!EtatBoutonM) //a modifier..
+      {
+        //on a appuyer sur menu/OK
+        //en fonction du menu, on effectue les modifications
+        switch (IdHorsMenu)
+        {
+           case MenuCdeVanne :
+             if(EtatVanne)
+             {
+                EtatActionneurM="OFF    ";
+             }
+             else
+               EtatActionneurM="ON     ";
+             EtatVanne=!EtatVanne;
+             AfficheHorsMenu("",EtatActionneurM);
+           break;
+           case MenuCdeChauff : 
+           if(EtatChauffage)
+             {
+                EtatActionneurM="OFF    ";
+             }
+             else
+               EtatActionneurM="ON     ";
+             EtatChauffage=!EtatChauffage;
+             AfficheHorsMenu("",EtatActionneurM);
+           break;  
+           case MenuCdeLum : 
+             if(EtatLumiere)
+             {
+                EtatActionneurM="OFF    ";
+             }
+             else
+               EtatActionneurM="ON     ";
+             EtatLumiere=!EtatLumiere;
+             AfficheHorsMenu("",EtatActionneurM);
+           break;    
+           case MenuCdeVolet : 
+             if(EtatVolet)
+             {
+                EtatActionneurM="OFF    ";
+             }
+             else
+               EtatActionneurM="ON     ";
+             EtatVolet=!EtatVolet;           
+             AfficheHorsMenu("",EtatActionneurM);
+           break; 
+           default :
+             EntreeMenu++;
+           break;               
+        }
+        if (EntreeMenu==2)
+        {
+          AfficheMenu(MTrigOuv);
+          InMenu=true;
+          IdMenu=0;
+        }
+        exit;
+      }
+      else
+      {
+        if (!EtatBoutonH || !EtatBoutonG)
+        {
+           //on décrimente le hors menu
+           EntreeMenu=0;
+           if (IdHorsMenu==0) //On evite de sortir du tableau, donc on reboucle
+           {
+              IdHorsMenu=LimiteHorsMenu; 
+           }
+           else
+             IdHorsMenu--;
+        }
+        else if (!EtatBoutonB || !EtatBoutonD)
+        {
+          //on incrimente le hors menu
+          if (IdHorsMenu==LimiteHorsMenu)  //On evite de sortir du tableau
+          {
+             IdHorsMenu=0;
+          }
+          else
+          {
+             IdHorsMenu++;
+          }
+        }  
+         //Maintenant, on regarde quel menu afficher 
+        switch(IdHorsMenu)
+        {
+          case MenuTempExt :
+            //Récupérer les valeurs Temp Ext et les min/max
+            AfficheMessage="EXT ";
+            AfficheMessage+="10.5";
+            AfficheMessage+="C-";
+            AfficheMessage+= "25.5";
+            AfficheMessage+= "C";
+            AfficheHorsMenu(AfficheMessage,"25.5C");
+          break;
+          case MenuTempInt :
+            //Récupérer les valeurs Temp Int et min /max                     
+            AfficheMessage="INT ";
+            AfficheMessage+="10.5";
+            AfficheMessage+="C-";
+            AfficheMessage+= "25.5";
+            AfficheMessage+= "C";
+            AfficheHorsMenu(AfficheMessage,"25.5C");
+          break;
+          case MenuMesures :
+            //Récuperer les valeurs hygro et Lum
+            AfficheMessage="Hygro ";
+            AfficheMessage+="25";
+            AfficheMessage+="%-LUM ";
+            AfficheMessage+="35";
+            AfficheHorsMenu(AfficheMessage,"");
+          break;
+          case MenuCdeVanne :
+            //Récupérer l'etat de la Vanne
+            // Serial.print("Etat Vanne");
+            EtatActionneur="OFF";
+            if (EtatVanne)
+            {
+              EtatActionneur=true;
+              EtatActionneur="ON    ";
+            }
+            AfficheHorsMenu("Etat Vanne",EtatActionneur);
+          break;
+          case MenuCdeChauff :
+            //Récuperer l'état du chauffage
+            EtatActionneur="OFF";
+            if (EtatChauffage)
+            {
+              EtatActionneur=true;
+              EtatActionneur="ON    ";
+            }
+            AfficheHorsMenu("Etat Chauffage",EtatActionneur);
+          break;
+          case MenuCdeLum :
+            //Récupérer l'état de la lumière
+            EtatActionneur="OFF";
+            if (EtatLumiere)
+            {
+              EtatActionneur=true;
+              EtatActionneur="ON    ";
+            }
+            AfficheHorsMenu("Etat Lumiere",EtatActionneur);
+          break;
+          case MenuCdeVolet :
+            //Récupérer l'état du volet
+            EtatActionneur="OFF";
+            if (EtatVolet)
+            {
+              EtatActionneur=true;
+              EtatActionneur="ON    ";
+            }
+            AfficheHorsMenu("Etat Volet",EtatActionneur);
+          break;
+        }
+      }
+      ////////////////////////////Fin de ce qui ne doit pas être fait si menu appuyé
+    }
+    else
+    {
+      //On est dans le menu
+     //a t'on appuyé sur menu ?
+      if (!EtatBoutonM) //a modifier..
+      {
+        //on a appuyer sur menu/OK
+        //en fonction du menu, on effectue les modifications
+        if (IdMenu==Quitter)
+        {
+           //sauvegarde
+           TrigOuverture=ValeurMenu[MTrigOuv];
+           TrigHygro=ValeurMenu[MTrigHygro];
+           TrigLumiere=ValeurMenu[MTrigLum];
+           TrigTemp=ValeurMenu[MTrigTemp];
+           TempoTrig=ValeurMenu[Mtempo];
+           EcritEEPROM_Config();
+           //on quitte le menu
+           InMenu=false;
+           EntreeMenu=0;
+           IdHorsMenu=MenuTempExt;
+           //affiche hors menu 
+           AfficheHorsMenu(" "," ");
+        }
+      }
+      else
+      {
+        if (!EtatBoutonH)
+        {
+           //on décrimente le menu
+           if (IdMenu==0) //On evite de sortir du tableau, donc on reboucle
+           {
+              IdMenu=LimiteMenu; 
+           }
+           else
+             IdMenu--;
+           //On regarde le menu a afficher
+           AfficheMenu(IdMenu);  
+        }
+        else if (!EtatBoutonB)
+        {
+          //on incrimente le hors menu
+          if (IdMenu==LimiteMenu)  //On evite de sortir du tableau
+          {
+             IdMenu=0;
+          }
+          else
+          {
+             IdMenu++;
+          }
+          //On regarde le menu à afficher
+          AfficheMenu(IdMenu); 
+        }  
+        else if (!EtatBoutonG) //si on a appuyer sur gauche ou droite
+        {
+           ValeurMenu[IdMenu]--;
+           if (ValeurMenu[IdMenu]<0)
+           {
+              ValeurMenu[IdMenu]=0;
+           }
+           AfficheHorsMenu("",String(ValeurMenu[IdMenu]));
+        }
+        else if (!EtatBoutonD) //si on a appuyer sur gauche ou droite
+        {
+           ValeurMenu[IdMenu]++;
+           if (ValeurMenu[IdMenu]>1024)
+           {
+              ValeurMenu[IdMenu]=1024;
+           }
+           AfficheHorsMenu("",String(ValeurMenu[IdMenu]));
+        }
+      }//Si  autre bouton que menu
+    }
+  }
+  delay(300); //anti rebond  
 }
 void ReinitialiseMesure()
 {
@@ -407,6 +730,8 @@ void ReinitialiseMesure()
   //on créé le prochain moment de faire une mesure
   HeureMesure=DateMesure.heures+TempoTrig;
 }
+
+
 
 /* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * */
 /*                                Initialisation                                       */
@@ -420,15 +745,20 @@ void setup() {
   //Initialise les bus
   
   //Initialise les ports
-  pinMode(BoutonMenu, INPUT_PULLUP);
-  pinMode(BoutonGauche, INPUT_PULLUP);
-  pinMode(BoutonDroit, INPUT_PULLUP);
-  pinMode(BoutonHaut, INPUT_PULLUP);
-  pinMode(BoutonBas, INPUT_PULLUP);
+  pinMode(BoutonMenu, INPUT);
+  pinMode(BoutonGauche, INPUT);
+  pinMode(BoutonDroit, INPUT);
+  pinMode(BoutonHaut, INPUT);
+  pinMode(BoutonBas, INPUT);
   //Mise à 0 de toutes les sorties
   digitalWrite(PinVanne,LOW);  //On arrete la vanne
   digitalWrite(PinLumiere,LOW);  //On arrete la lumière
   digitalWrite(PinChauffage,LOW);  //On arrete le chauffage
+  //Fermer le volet !!!
+  EtatVanne=false;
+  EtatLumiere=false;
+  EtatChauffage=false;
+  EtatVolet=false;
   //initialise les affichages
   
   //initialise l'horloge (en provenance de l'horloge)
@@ -439,13 +769,23 @@ void setup() {
   EEPROM.get(sizeof(int)*6,TrigHygro);
   EEPROM.get(sizeof(int)*8,TrigTemp);
   EEPROM.get(sizeof(int)*7,TrigLumiere);
+  ValeurMenu[MTrigOuv]=TrigOuverture;
+  ValeurMenu[MTrigHygro]=TrigHygro;
+  ValeurMenu[MTrigLum]=TrigLumiere;
+  ValeurMenu[MTrigTemp]=TrigTemp;
   //Lecture de l'intervalle de mesure  
   EEPROM.get(sizeof(int)*9,TempoTrig);
- 
+  ValeurMenu[Mtempo]=TempoTrig;
+ //Initialise le menu
+  InMenu=false;
+  IdHorsMenu=0;
+  EntreeMenu=0;
+  IdMenu=0;
   //Demande a faire une mesure : initialise donc le cycle
   DebutScript=true;
   //Initialise le pointeur d'eeprom
-  PointeurEEPROM=0;  
+  PointeurEEPROM=0;
+  NombreRecord=0;  
 }
 
 /* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * */
@@ -481,4 +821,5 @@ void loop() {
      ReinitialiseMesure(); 
   }
   //Scan des boutons
+   bouton_appuye();
 }
