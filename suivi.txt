@@ -5,3 +5,6 @@ Suivi du développement :
   Reste à développer la gestion de la récupération du nombre d'enregistrement dans l'eeprom.
   Faire le traitement action chaffage/volet
   Définir la fonction de lecture de la structure d'enregistrements dans l'EEPROM I2C
+26/11/2016
+  Attention, les valeurs sont stockées brutes. En ce qui concerne les réglage et les analyses (vi logiciel), prévoir de se mettre en conformité
+  
