@@ -7,4 +7,5 @@ Suivi du développement :
   Définir la fonction de lecture de la structure d'enregistrements dans l'EEPROM I2C
 26/11/2016
   Attention, les valeurs sont stockées brutes. En ce qui concerne les réglage et les analyses (vi logiciel), prévoir de se mettre en conformité
-  
+27/11/2016
+  Sur le logiciel coté PC, les mesures sont recues, correctements, mais par contre leur mise en forme n'est pas totalement effectuée. 
