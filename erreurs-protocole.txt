@@ -1,0 +1,9 @@
+Liste des erreurs du protocoles
+0 : pas d'erreur fermeture normale de la communication
+1 : Le coffret à répondu PNOK
+2 : le coffret n'est pas celui attendu
+3 : Le coffret n'est pas dans la version attendue
+4 : Commande envoyée alors que le protocole n'est pas initialisé
+5 : On a recu une réponse non attendue du coffret
+6 : Erreur de formatage de la réponse d'un enregistrement
+7 : Erreur dans le protocole au niveau d'une commande de sortie
