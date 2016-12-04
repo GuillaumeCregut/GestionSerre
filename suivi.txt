@@ -10,4 +10,10 @@ Suivi du développement :
 27/11/2016
   Sur le logiciel coté PC, les mesures sont recues, correctements, mais par contre leur mise en forme n'est pas totalement effectuée. 
 04/12/2016 
-  Sur logiciel PC, on ne récupère pas encore les mesures mémorisées. Le fonctionnement avec le coffret n'est pas implémenté.  
+  Sur logiciel PC, on ne récupère pas encore les mesures mémorisées. Le fonctionnement avec le coffret n'est pas implémenté.
+Note : Mettre le retour de la valeur dans la fonction de commande des sorties, pour le protocole, cela évite de faire une mesure dans la boucle.
+Ne pas oublier le delay entre le set et la lecture.  
+Logiciel : Gestion du protocole pour les sorties OK.
+Affiner les choses pour ne plus avoir a faire ouverture de port et fermeture de port...
+Arduino : Ajout du protocole "vide" : il faut remplir avec les bonnes fonctions, modifier les fonctions de commandes des sorties.
+A faire vraiment attention, car tout est vide. (valeurs lues et renvoyées, commandes de sorties, lecture de l'EEPROM...)
