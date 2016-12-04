@@ -46,7 +46,6 @@ Si option EEPROM : affiche aussi les min/max enregistrées.
 
 Dans menu :
 Valeurs stockées en EEPROM
-Réglage du 0 humidité
 Réglage T°C max pour ouverture trappe 
 Réglage T°C min pour alimenter le chauffage
 Si option, paramètres IP et protocole domoticos
