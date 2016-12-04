@@ -9,3 +9,5 @@ Suivi du développement :
   Attention, les valeurs sont stockées brutes. En ce qui concerne les réglage et les analyses (vi logiciel), prévoir de se mettre en conformité
 27/11/2016
   Sur le logiciel coté PC, les mesures sont recues, correctements, mais par contre leur mise en forme n'est pas totalement effectuée. 
+04/12/2016 
+  Sur logiciel PC, on ne récupère pas encore les mesures mémorisées. Le fonctionnement avec le coffret n'est pas implémenté.  
