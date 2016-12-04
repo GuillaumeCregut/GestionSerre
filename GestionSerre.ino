@@ -2,7 +2,7 @@
 /*            Gestion Serre intelligente             */
 /*   G. Cregut                                       */
 /*   DATE Création : 14/11/2016                      */
-/*   Date Modification : 25/11/2016                  */
+/*   Date Modification : 04/12/2016                  */
 /* (c)2016 Editiel98                                 */
 /* * * * * * * * * * * * * * * * * * * * * * * * * * */
 
@@ -25,13 +25,18 @@ int TrigHygro, TrigTemp, TrigLumiere,TrigOuverture;  //valeur a partir du moment
 int PointeurEEPROM;  //Pointeur de position dans la prom. Pas forcement INT, a voir !
 byte TempoTrig,HeureMesure; //Delai en heure entre 2 mesures, Heure de la dernière mesure
 int NombreRecord; //Nombre d'enregistrement dans l'EEPROM
-//Structure pour lire et écrire dans la RTC
+                                       //Structure pour lire et écrire dans la RTC
 DateRTC DateMesure;
 MesureEEPROM MesureFaite;  //Génère une structure type mesure
 int IdMenu; //position dans le menu
 byte EntreeMenu;  //Compteur pour passer dans le menu
 byte IdHorsMenu; //Position dans le "hors menu"
 int ValeurMenu[5];
+                                      //Déclaration des variables pour le protocole
+byte IdRecu=0;
+bool POK=false;
+bool SortiePil;
+
 /* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * */
 /*                                                                         */
 /*                       Déclarations constantes globales                  */
@@ -47,7 +52,7 @@ int ValeurMenu[5];
 #define PinTempExt A1
 #define PinHygro A2
 #define PinLuminosite A3
-
+#define PortSpeed 9600
 //Entrées numériques  //Changer les valeurs
 #define BoutonMenu 1
 #define BoutonHaut 2
@@ -735,7 +740,302 @@ void ReinitialiseMesure()
   HeureMesure=DateMesure.heures+TempoTrig;
 }
 
+                     /********Fonctions Protocole Série   ********/
+void LitSerial()
+{
+  String MaChaine="";
+  if(Serial.available())
+  {
+    while(Serial.available())
+    {
+      char c=Serial.read();
+       MaChaine+=String(c);
+       delay(10);
+    }
+    MaChaine.trim();
+    analyseprotocole(MaChaine);
+    MaChaine="";
+  }
+}
 
+
+                     /********Fonctions Protocole Série  Analyse ********/
+void analyseprotocole(String recu)
+{
+  bool GetRecord=false;
+  unsigned int i;
+  String Reponse;
+  GetRecord=recu.startsWith("GR",0);
+   //On est dans le protocole
+  if (POK)
+  {
+    //On est dans le protocole, on traite les receptions
+    IdRecu=0;
+    if(recu=="PNOK")
+    {
+      IdRecu=7;
+    }
+    if(recu=="G1")
+    {
+      IdRecu=1;
+    }
+    if(recu=="G2")
+    {
+      IdRecu=2;
+    }
+    if(recu=="G3")
+    {
+      IdRecu=3;
+    }
+    if(recu=="G4")
+    {
+      IdRecu=4;
+    }
+    if(recu=="M")
+    {
+      IdRecu=5;
+    }
+    if (GetRecord)
+    {
+      IdRecu=6;
+    }
+    SortiePil=recu.startsWith("S");
+    if (SortiePil)
+    {
+      IdRecu=8;
+    }
+    switch(IdRecu)
+    {
+      case 0:  //On a pas recu une commande valide
+        Serial.println("PNOK"); //
+        POK=false;
+        break;  
+      case 1:  //On a recu G1
+       //Lecture de la température intérieure
+        Serial.println("");  //Envoie la valeur brut de lecture en int
+        break;  
+      case 2:  //On a recu G2
+        //Lecture de la température extérieure
+        Serial.println(""); //Envoie la valeur brut de lecture en int
+        break; 
+      case 3:  //On a recu G3
+        //Lecture Hygro
+        Serial.println(""); //Envoie la valeur brut de lecture en int
+        break; 
+      case 4:  //On a recu G4
+        //Lecture Luminosité
+        Serial.println(""); //Envoie la valeur brut de lecture en int
+        break; 
+      case 5:  //On a recu M
+        //On envoie le nombre d'enregistrement présent dans l'EEPROM
+        Serial.println("20");
+        break;  
+      case 6:  //On a recu GetRecord
+
+        i=recu.length();  //taille du message recu
+        if (i>8) //GR_65535 c'est 8 caractères
+        {
+           Serial.println("PNOK");
+           POK=false;
+        }
+        recu=recu.substring(3,i);  //on supprime le "GR_"
+        i=recu.toInt();
+        if(i<=0)
+        {
+           Serial.println("PNOK");
+           POK=false; 
+        }
+        else
+        {
+      //On retourne le numéro de l'enregistrement et les infos
+          Reponse=i;
+          Reponse+="-31-12-2016-18-41-1-1024";
+          Serial.println(Reponse);
+        }
+        break;
+      case 7:  //On a recu PNOK
+        POK=false;
+     //   Serial.println("Recu PNOK");         //Debug
+        break; 
+      case 8:  //On a recu une commande de sortie
+        char Sortie, valeur;
+        int ValMesRetour;
+        i=recu.length();  //taille du message recu
+        if (i==4)
+        {
+          Sortie=recu[1];
+      /*  Serial.print("Recu S+");         //Debug
+        Serial.println(Sortie);         //Debug*/
+        
+          valeur=recu[3]; 
+        }
+        else
+        {
+          Sortie='X';  
+        }
+        //////////////////////////////////////
+        switch(Sortie)
+        {
+           case 'C' : //C'est le chauffage
+             if (valeur=='0')
+             {
+                //On ferme le chauffage
+                digitalWrite(13,LOW);
+                //On lit la valeur effective
+                delay(100);
+                ValMesRetour=digitalRead(13);  //Changer pour la bonne broche
+                Serial.println(ValMesRetour);
+             }
+             else if (valeur=='1')
+             {
+                //On ouvre le chauffage
+                digitalWrite(13,HIGH);
+                //On lit la valeur effective
+                delay(100);
+                ValMesRetour=digitalRead(13);  //Changer pour la bonne broche
+                Serial.println(ValMesRetour);
+             }
+            else if (valeur='?')
+            {
+                ValMesRetour=digitalRead(13);  //Changer pour la bonne broche
+                Serial.println(ValMesRetour);
+            }             
+             else
+             {
+                Serial.println("PNOK SC");
+                POK=false;
+             } 
+             break;
+           case 'V' :  //C'est la vanne
+            if (valeur=='0')
+            {
+              //On ferme la vanne
+                digitalWrite(13,LOW);
+              //On lit la valeur effective
+                delay(100);
+                ValMesRetour=digitalRead(13);  //Changer pour la bonne broche
+                Serial.println(ValMesRetour);
+            }
+            else if (valeur=='1')
+            {
+              //On ouvre la vanne
+                digitalWrite(13,HIGH);
+              //On lit la valeur effective
+                delay(100);
+                ValMesRetour=digitalRead(13);  //Changer pour la bonne broche
+                Serial.println(ValMesRetour);
+            }
+            else if (valeur='?')
+            {
+                ValMesRetour=digitalRead(13);  //Changer pour la bonne broche
+                Serial.println(ValMesRetour);
+            }            
+            else
+            {
+              Serial.println("PNOK SV");
+              POK=false;
+            }
+            break;
+          case 'T' :  //C'est le volet
+                  if (valeur=='0')
+            {
+              //On ferme la volet
+                digitalWrite(13,LOW);
+             //On lit la valeur effective
+                delay(100);
+                ValMesRetour=digitalRead(13);  //Changer pour la bonne broche
+                Serial.println(ValMesRetour);
+            }
+            else if (valeur=='1')
+            {
+              //On ouvre la volet
+                digitalWrite(13,HIGH);
+              //On lit la valeur effective
+                delay(100);
+                ValMesRetour=digitalRead(13);  //Changer pour la bonne broche
+                Serial.println(ValMesRetour);
+            }
+            else if (valeur='?')
+            {
+                ValMesRetour=digitalRead(13);  //Changer pour la bonne broche
+                Serial.println(ValMesRetour);
+            }
+            else
+            {
+              Serial.println("PNOK ST");
+              POK=false;
+            }
+            break;
+          case 'L':  // C'est la lumière
+            if (valeur=='0')
+            {
+              //On ferme la lumière
+                digitalWrite(13,LOW);
+              //On lit la valeur effective
+                delay(100);
+                ValMesRetour=digitalRead(13);  //Changer pour la bonne broche
+            //    Serial.println("Mise a 0");      ///debug
+                Serial.println(ValMesRetour);
+            }
+            else if (valeur=='1')
+            {
+              //On ouvre la lumière
+                digitalWrite(13,HIGH);
+             //On lit la valeur effective
+                delay(100);
+                ValMesRetour=digitalRead(13);  //Changer pour la bonne broche
+              //  Serial.println("Mise a 1");      ///debug
+                Serial.println(ValMesRetour);
+            }
+            else if (valeur='?')
+            {
+                ValMesRetour=digitalRead(13);  //Changer pour la bonne broche
+                Serial.println(ValMesRetour);
+            }
+            else
+            {
+              Serial.println("PNOK SL");
+              POK=false;
+            }
+            break;
+          default :
+            //Erreur de protocole, sortie
+            Serial.println("PNOK S");
+            POK=false;
+            break;  
+        }      
+        /////////////////////////////////////
+        break;           
+    }
+  }  //Fin de on est dans le protocole
+    //On initialise le protocole
+  if (!POK)
+  {  
+    if (recu=="?")
+    {
+      Serial.println("GestionSerre");
+    }
+    else
+    {
+      if (recu=="V")
+      {
+        Serial.println("1.0");
+      }
+      else
+      {
+        if (recu=="POK")
+        {
+          POK=true;  //Le logiciel nous informe qu'il accepte le protocole
+        }
+        else
+        {
+          POK=false;
+        }
+      }  
+    }
+  }  
+}
+                     
 
 /* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * */
 /*                                Initialisation                                       */
@@ -790,6 +1090,8 @@ void setup() {
   //Initialise le pointeur d'eeprom
   PointeurEEPROM=0;
   NombreRecord=0;  
+  //Initialise le port Série
+  Serial.begin(PortSpeed);
 }
 
 /* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * */
@@ -826,4 +1128,6 @@ void loop() {
   }
   //Scan des boutons
    bouton_appuye();
+   //Scan le port série
+   LitSerial();
 }
