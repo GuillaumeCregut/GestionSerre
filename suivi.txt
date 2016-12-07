@@ -17,3 +17,7 @@ Logiciel : Gestion du protocole pour les sorties OK.
 Affiner les choses pour ne plus avoir a faire ouverture de port et fermeture de port...
 Arduino : Ajout du protocole "vide" : il faut remplir avec les bonnes fonctions, modifier les fonctions de commandes des sorties.
 A faire vraiment attention, car tout est vide. (valeurs lues et renvoyées, commandes de sorties, lecture de l'EEPROM...)
+
+07/12/2016
+Sur logiciel PC, ajout de la demande de nombre de mesures.
+Il ne manque plus que l'icone, tout est fonctionnel.
