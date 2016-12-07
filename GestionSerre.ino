@@ -795,6 +795,10 @@ void analyseprotocole(String recu)
     {
       IdRecu=5;
     }
+    if(recu=="ER")
+    {
+      IdRecu=9;
+    }
     if (GetRecord)
     {
       IdRecu=6;
@@ -804,6 +808,7 @@ void analyseprotocole(String recu)
     {
       IdRecu=8;
     }
+    
     switch(IdRecu)
     {
       case 0:  //On a pas recu une commande valide
@@ -1005,7 +1010,11 @@ void analyseprotocole(String recu)
             break;  
         }      
         /////////////////////////////////////
-        break;           
+        break; 
+        case 9:   //On efface la mémoire
+          PointeurEEPROM=0;  //Réinitialisation du pointeur, revient à faire un effacement.
+          Serial.println("OK");
+          break;          
     }
   }  //Fin de on est dans le protocole
     //On initialise le protocole
