@@ -21,3 +21,4 @@ A faire vraiment attention, car tout est vide. (valeurs lues et renvoyées, comm
 07/12/2016
 Sur logiciel PC, ajout de la demande de nombre de mesures.
 Il ne manque plus que l'icone, tout est fonctionnel.
+Ajout de la fonction, dans le protocole, d'effacement de la mémoire.
