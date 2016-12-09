@@ -10,7 +10,7 @@
 #include <Wire.h>  //pour l'EEPROM, la RTC et l'écran.
 #include <EEPROM.h> // Pour le stockage des paramètres dans la PROM de l'arduino
 #include "structDate.h" //stucture de la date
-
+#include <LiquidCrystal_I2C.h>  //Pour le controle de l'aficheur I2C
 /* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * */
 /*                                                                         */
 /*                        Déclarations variables globales                  */
@@ -19,12 +19,15 @@
 int TempExt, TempInt, MesHygro, MesLum ;  //Retour des mesures de températures
 bool FaireMesure;   //Toggle pour déclencher les mesures. En fonction de la période des mesures
 bool DebutScript; // indique qu'on démarre la carte
+bool BackLightLCD;  //Etat du backlight du LCD
 bool EtatVolet, EtatLumiere,EtatVanne, EtatChauffage;
 bool InMenu; //Défini si on est entrer dans le menu ou non
 int TrigHygro, TrigTemp, TrigLumiere,TrigOuverture;  //valeur a partir du moment ou on arrose, aere ou allume la lumière
 int PointeurEEPROM;  //Pointeur de position dans la prom. Pas forcement INT, a voir !
 byte TempoTrig,HeureMesure; //Delai en heure entre 2 mesures, Heure de la dernière mesure
 int NombreRecord; //Nombre d'enregistrement dans l'EEPROM
+unsigned long ReinitBackLight;
+long int Maintenant;  //Pour l'extinction de l'écran. Lancé a chaque appui. Scanné dans la boule principale
                                        //Structure pour lire et écrire dans la RTC
 DateRTC DateMesure;
 MesureEEPROM MesureFaite;  //Génère une structure type mesure
@@ -45,7 +48,7 @@ bool SortiePil;
 
   //Adresses Bus
 #define Adress_RTC 0     //A changer
-#define AdresseLCD 1     //A changer
+#define AdresseLCD 0x27     //A vérfier
 #define AdresseEEPROM 2     //A changer
 //Entrées analogiques
 #define PinTempInt A0  //Broche connectée au capteur intérieur.
@@ -90,6 +93,14 @@ bool SortiePil;
 #define MTrigTemp 3
 #define Mtempo 4
 #define Quitter 5
+
+//Definition du temps d'éclairage en ms de l'afficheur
+#define TempsMilliBackLight 30000   //30 secondes d'affichage de l'écran.
+
+                                //Déclarations diverses 
+LiquidCrystal_I2C MonEcran(AdresseLCD, 2, 1, 0, 4, 5, 6, 7, 3, POSITIVE);  // Set the LCD I2C address
+
+
 /* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * */
 /*                                                                         */
 /*                          Déclarations des fonctions                     */
@@ -426,24 +437,22 @@ void EcritEEPROM_Config()
 }
 
                      /********Fonction Affichage   ********/
-/* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * */                      
-/*          Fonction a modifier en fonction de l'afficheur LCD                     */
-/* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * */
+ 
  void AfficheHorsMenu(String MessageAAfficherL1,String MessageAAfficherL2)
 {
   if (MessageAAfficherL1=="")
   {
     //on a cliquer sur menu/OK ou on change les valeurs, on change donc la ligne 2 uniquement
-  /*  MonEcran.setCursor(0,1); //On passe à la seconde ligne
-    MonEcran.print(MessageAAfficherL2);*/
+    MonEcran.setCursor(0,1); //On passe à la seconde ligne
+    MonEcran.print(MessageAAfficherL2);
   }
   else
   {
-   /* MonEcran.clear(); //On efface l'écran
+    MonEcran.clear(); //On efface l'écran
     MonEcran.setCursor(0,0); //On met le curseur en début de la 1ere ligne
     MonEcran.print(MessageAAfficherL1);
     MonEcran.setCursor(0,1); //On passe à la seconde ligne
-    MonEcran.print(MessageAAfficherL2);*/
+    MonEcran.print(MessageAAfficherL2);
   }
 }        
 
@@ -489,6 +498,12 @@ void bouton_appuye()
   boolean EtatBoutonD=digitalRead(BoutonDroit);
   boolean EtatBoutonM=digitalRead(BoutonMenu);
   String EtatActionneur,EtatActionneurM;
+  Maintenant=millis();   //On relance le décompte pour l'extinction
+  if(!BackLightLCD)
+  {
+    MonEcran.backlight();
+    ReinitBackLight=millis();  //On mémorise le départ de l'éclairage
+  }
   if (!EtatBoutonH || !EtatBoutonB || !EtatBoutonG || !EtatBoutonD || !EtatBoutonM)
   {
     //on a appuyer sur un bouton
@@ -1101,6 +1116,9 @@ void setup() {
   NombreRecord=0;  
   //Initialise le port Série
   Serial.begin(PortSpeed);
+  //Initialise l'écran
+  MonEcran.begin(16,2); 
+  MonEcran.noBacklight();
 }
 
 /* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * */
@@ -1118,6 +1136,11 @@ void loop() {
   if  (DateMesure.heures>=HeureMesure)
   {
     FaireMesure=true; 
+  }
+  //Scan pour éteindre l'écran, si on a dépassé le temps, on éteint
+  if((TempsMilliBackLight+ReinitBackLight)>Maintenant)
+  {
+    MonEcran.noBacklight();
   }
   if (FaireMesure or DebutScript)
   {
