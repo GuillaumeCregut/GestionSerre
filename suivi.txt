@@ -22,3 +22,7 @@ A faire vraiment attention, car tout est vide. (valeurs lues et renvoyées, comm
 Sur logiciel PC, ajout de la demande de nombre de mesures.
 Il ne manque plus que l'icone, tout est fonctionnel.
 Ajout de la fonction, dans le protocole, d'effacement de la mémoire.
+
+09/112/2016
+Ajout de la bibliothèque 2cran I2C.
+Ajout de la gestion de l'écran voir pour le backLight.=>2 variables, checkée dans la boucle principale, et modifiée à chaque appui sur une touche.
